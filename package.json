@@ -1,0 +1,23 @@
+{
+  "name": "web-aplikacije-vjezbe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anna011001/Web-aplikacije-vjezbe.git"
+  },
+  "keywords": [],
+  "author": "Anna Bissinger",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/anna011001/Web-aplikacije-vjezbe/issues"
+  },
+  "homepage": "https://github.com/anna011001/Web-aplikacije-vjezbe#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
