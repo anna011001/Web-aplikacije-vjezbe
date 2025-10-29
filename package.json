@@ -19,5 +19,6 @@
   "homepage": "https://github.com/anna011001/Web-aplikacije-vjezbe#readme",
   "dependencies": {
     "express": "^5.1.0"
-  }
+  },
+  "devDependencies": {}
 }
