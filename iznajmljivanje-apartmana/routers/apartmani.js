@@ -30,12 +30,12 @@ apartmaniRouter.post("/", (req, res) => {
 // PUT - zamjena cijelog zapisa
 apartmaniRouter.put("/:id", (req, res) => {
   const index = apartmani.findIndex(apartman => apartman.id == req.params.id);
-  if (index === -1) return res.status(404).send("Apartman nije pronađen");
+  if (index == -1) return res.status(404).send("Apartman nije pronađen");
   apartmani[index] = { ...req.body, id: apartmani[index].id, };
   res.status(200).json(apartmani[index]);
 });
 
-// PATCH - djelomična izmjena
+// PATCH - djelomična izmjena naziva apartmana
 apartmaniRouter.patch("/:id", (req, res) => {
   const apartman = apartmani.find(apartman => apartman.id == req.params.id);
   if (!apartman) return res.status(404).send("Apartman nije pronađen");
