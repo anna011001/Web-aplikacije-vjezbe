@@ -6,5 +6,5 @@ import Header from './components/Header.vue';
 <!-- app/pizza-vue/src/App.vue -->
 <template>
     <Header></Header>
-    <PizzaList/>
+    <RouterView></RouterView>
 </template>
