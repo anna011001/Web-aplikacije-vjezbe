@@ -1,40 +1,47 @@
 // app/pizza-express/routes/narudzbe.js
 
 import express from 'express';
-import { narudzbe, pizze } from '../data/data.js'; // učitavanje dummy podataka
+import { db } from '../index.js';
 const narudzbeRouter = express.Router();
 
 // POST /narudzbe - Izrada nove narudžbe pizza
-narudzbeRouter.post('/', (req, res) => {
-    console.log('Primljeni podaci narudžbe:', req.body);
-    const { narucene_pizze, podaci_dostava } = req.body;
-    if (!narucene_pizze || narucene_pizze.length === 0) {
-        return res.status(400).json({ message: 'Nisu specificirane naručene pizze.' });
-    }
-    // Izračun ukupne cijene narudžbe
-    let ukupna_cijena = 0;
-    for (const narucena of narucene_pizze) {
-        const pizza = pizze.find(p => p.naziv.toLowerCase() === narucena.naziv.toLowerCase());
-        if (!pizza) {
-            return res.status(400).json({ message: `Pizza s nazivom '${narucena.naziv}' nije dostupna.` });
-        }
-        const cijena = pizza.cijene[narucena.velicina.toLowerCase()];
-        if (!cijena) {
-            return res.status(400).json({ message: `Veličina '${narucena.velicina}' nije dostupna za pizzu '${narucena.naziv}'.` });
-        }
-        ukupna_cijena += cijena * narucena.kolicina;
-    }
-   
-ukupna_cijena = Number(ukupna_cijena.toFixed(2));
+narudzbeRouter.post('/', async (req, res) => {
+    let narudzbe_collection = db.collection('narudzbe');
+    let novaNarudzba = req.body;
 
-const nova_narudzba = {
-    id: narudzbe.length + 1,
-    narucene_pizze,
-    ukupna_cijena,
-    podaci_dostava
-  };
-  narudzbe.push(nova_narudzba);
-  res.status(201).json({ message: 'Narudžba je uspješno kreirana.', narudzba: nova_narudzba });
+    let obavezniKljucevi = ['kupac', 'adresa', 'broj_telefona', 'narucene_pizze'];
+    let obavezniKljuceviStavke = ['naziv', 'količina', 'veličina'];
+
+    if (!obavezniKljucevi.every(kljuc => kljuc in novaNarudzba)) {
+        return res.status(400).json({ error: 'Nedostaju obavezni ključevi' });
+    }
+    // za svaku stavku narudžbe provjeravamo obavezne ključeve, ovaj put ugniježđenom `every` metodom
+    if (!novaNarudzba.narucene_pizze.every(stavka => obavezniKljuceviStavke.every(kljuc => kljuc in stavka))) {
+        return res.status(400).json({ error: 'Nedostaju obavezni ključevi u stavci narudžbe' });
+    }
+
+    if (
+        !novaNarudzba.narucene_pizze.every(stavka => {
+            return Number.isInteger(stavka.količina) && stavka.količina > 0 && ['mala', 'srednja', 'velika'].includes(stavka.veličina);
+        })
+    ) {
+        return res.status(400).json({ error: 'Neispravni podaci u stavci narudzbe' });
+    }
+
+    let pizze_collection = db.collection('pizze');
+    let dostupne_pizze = await pizze_collection.find().toArray();
+
+    if (!novaNarudzba.narucene_pizze.every(stavka => dostupne_pizze.some(pizza => pizza.naziv === stavka.naziv))) {
+        return res.status(400).json({ error: 'Odabrali ste pizzu koju nemamo u ponudi' });
+    }
+
+    try {
+        let result = await narudzbe_collection.insertOne(novaNarudzba);
+        res.status(201).json({ insertedId: result.insertedId });
+    } catch (error) {
+        console.log(error.errorResponse);
+        res.status(400).json({ error: error.errorResponse });
+    }
 });
 
 export default narudzbeRouter;
