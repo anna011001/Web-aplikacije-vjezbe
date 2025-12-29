@@ -33,7 +33,7 @@ narudzbeRouter.post('/', async (req, res) => {
     let novaNarudzba = req.body;
 
     let obavezniKljucevi = ['kupac', 'adresa', 'broj_telefona', 'narucene_pizze'];
-    let obavezniKljuceviStavke = ['naziv', 'količina', 'veličina'];
+    let obavezniKljuceviStavke = ['naziv', 'kolicina', 'velicina'];
 
     if (!obavezniKljucevi.every(kljuc => kljuc in novaNarudzba)) {
         return res.status(400).json({ error: 'Nedostaju obavezni ključevi' });
@@ -45,7 +45,7 @@ narudzbeRouter.post('/', async (req, res) => {
 
     if (
         !novaNarudzba.narucene_pizze.every(stavka => {
-            return Number.isInteger(stavka.količina) && stavka.količina > 0 && ['mala', 'srednja', 'velika'].includes(stavka.veličina)
+            return Number.isInteger(stavka.kolicina) && stavka.kolicina > 0 && ['mala', 'srednja', 'jumbo'].includes(stavka.velicina)
             && typeof novaNarudzba.naziv !== "string";
         })
     ) {
@@ -68,7 +68,7 @@ narudzbeRouter.post('/', async (req, res) => {
     novaNarudzba.narucene_pizze.forEach(stavka => {
         const pizza = dostupne_pizze.find(druga_pizza => druga_pizza.naziv == stavka.naziv);
 
-        ukupna_cijena += pizza.cijene[stavka.veličina] * stavka.količina;
+        ukupna_cijena += pizza.cijene[stavka.velicina] * stavka.kolicina;
     });
 
     novaNarudzba.ukupna_cijena = ukupna_cijena;

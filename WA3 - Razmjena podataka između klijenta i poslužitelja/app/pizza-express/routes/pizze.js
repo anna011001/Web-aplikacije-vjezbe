@@ -4,26 +4,71 @@ import { db } from '../index.js';
 const pizzeRouter = express.Router();
 
 // GET /pizze - Dohvaćanje svih pizza (npr. GET /pizze)
+const velicine = ['mala', 'srednja', 'jumbo'];
+
 pizzeRouter.get('/', async (req, res) => {
-    let pizze_collection = db.collection('pizze'); // referenca na kolekciju 'pizze'
-    let cijena_query = req.query.cijena;
-    let naziv_query = req.query.naziv;
+  const pizze_collection = db.collection('pizze');
 
-    if(!cijena_query) {
-        let pizze = await pizze_collection.find().toArray();
-        return res.status(200).json(pizze);
+  const { naziv, cijena_min, cijena_max, sort } = req.query;
+  const filter = {};
+
+  if (naziv?.trim()) {
+    filter.naziv = { $regex: naziv.trim(), $options: 'i' };
+  }
+
+  /**
+   * Primjer filtera:
+   * ```
+   * {
+   *  $or: [
+   *    { "cijene.mala": { $gte: min, $lte: max } },
+   *    { "cijene.srednja": { $gte: min, $lte: max } },
+   *    { "cijene.jumbo": { $gte: min, $lte: max } }
+   *  ]
+   * }
+   *```
+   */
+
+  if (cijena_min || cijena_max) {
+    const min = Number(cijena_min);
+    const max = Number(cijena_max);
+
+    const iliUvjeti = [];
+
+    for (const velicina of velicine) {
+      const uvjetZaVelicinu = {};
+
+      if (!Number.isNaN(min)) uvjetZaVelicinu.$gte = min;
+      if (!Number.isNaN(max)) uvjetZaVelicinu.$lte = max;
+
+      if (Object.keys(uvjetZaVelicinu).length) {
+        iliUvjeti.push({ [`cijene.${velicina}`]: uvjetZaVelicinu });
+      }
     }
 
-    try {
-        let pizze = await pizze_collection
-            .find()
-            .sort({ cijena: Number(cijena_query), naziv: Number(naziv_query) })
-            .toArray(); // pretvorba u Array
-        res.status(200).json(pizze);
-    } catch (error) {
-        console.log(error.errorResponse);
-        res.status(400).json({ error: error.errorResponse });
+    if (iliUvjeti.length) {
+      filter.$or = iliUvjeti;
     }
+  }
+
+  const sortObj = {};
+
+    if (sort === 'asc') sortObj[`cijene.mala`] = 1;
+    if (sort === 'desc') sortObj[`cijene.mala`] = -1;
+
+  try {
+    let cursor = pizze_collection.find(filter);
+
+    if (sortObj[`cijene.mala`]) {
+      cursor = cursor.sort(sortObj);
+    }
+
+    const pizze = await cursor.toArray();
+    return res.status(200).json(pizze);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'Greška na serveru.' });
+  }
 });
 
 // GET /pizze/:naziv - Dohvaćanje pizze prema nazivu (npr. GET /pizze/Margherita)
